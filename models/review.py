@@ -65,3 +65,4 @@ class Place(BaseModel, Base):
         """
         if isinstance(obj, 'Amenity'):
             self.amenity_id.append(obj.id)
+  
