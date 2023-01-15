@@ -1,95 +1,71 @@
 #!/usr/bin/python3
-"""This module defines a class to manage file storage for hbnb clone"""
+"""
+module containing FileStorage used for file storage
+"""
 import json
-import datetime
-from models.base_model import BaseModel
-from models.user import User
-from models.state import State
-from models.city import City
-from models.amenity import Amenity
-from models.place import Place
-from models.review import Review
+import models
 
 
 class FileStorage:
-    """This class manages storage of hbnb models in JSON format"""
-    __file_path = 'file.json'
+    """
+    serializes and deserializes instances to and from JSON file
+    saved into file_path
+    """
+
+    __file_path = "file.json"
     __objects = {}
 
     def all(self, cls=None):
-        """Returns a dictionary of models currently in storage"""
-        if cls:
-            return {key: obj for (key, obj) in self.__objects.items()
-                    if isinstance(obj, cls)}
-        return self.__objects
+        """
+        returns a dictionary containing every object
+        """
+        if (not cls):
+            return self.__objects
+        result = {}
+        for key in self.__objects.keys():
+            if (key.split(".")[0] == cls.__name__):
+                result.update({key: self.__objects[key]})
+        return result
 
     def new(self, obj):
-        """Adds new object to storage dictionary"""
-        if obj:
-            key = "{}.{}".format(type(obj).__name__, obj.id)
-            self.__objects[key] = obj
+        """
+        creates a new object and saves it to __objects
+        """
+        key = "{}.{}".format(type(obj).__name__, obj.id)
+        self.__objects[key] = obj
 
     def save(self):
-        """Saves storage dictionary to file"""
-        objects_dict = {}
-        for key, val in self.__objects.items():
-            objects_dict[key] = value.to_dict()
-
-        with open(self.__file_path, 'w', encoding="UTF-8") as fd:
-            json.dump(objects_dict, fd)
+        """
+        update the JSON file to reflect any change in the objects
+        """
+        temp = {}
+        for id, obj in self.__objects.items():
+            temp[id] = obj.to_dict()
+        with open(self.__file_path, "w") as json_file:
+            json.dump(temp, json_file)
 
     def reload(self):
-        """Deserialize json file"""
+        """
+        update __objects dict to restore previously created objects
+        """
         try:
-            with open(self.__file_path, encoding="UTF-8") as fd:
-                for key, value in (json.load(fd)).items():
-                    value = eval(value["__class__"])(**value)
-                    self.__objects[key] = value
-        except FileNotFoundError:
+            with open(self.__file_path, "r") as json_file:
+                temp = json.load(json_file)
+            for id, dict in temp.items():
+                temp_instance = models.dummy_classes[dict["__class__"]](**dict)
+                self.__objects[id] = temp_instance
+        except:
             pass
 
-    def delete(self, obj=None):
-        """Deletes an object"""
-        if obj:
-            key = "{}.{}".format(type(obj).__name__, obj.id)
-            if (key, obj) in self.__objects.items():
-                self.__objects.pop(key, None)
-        self.save()
-
     def close(self):
-        """Deserializes JSON file to objects"""
+        """display our HBNB data
+        """
         self.reload()
 
-    def classes(self):
-        """Return dict repr"""
-        from models.base_model import BaseModel
-        from models.user import User
-        from models.state import State
-        from models.city import City
-        from models.amenity import Amenity
-        from models.place import Place
-        from models.review import Review
-
-        classes = {"BaseModel": BaseModel, "User": User, "State": State,
-                   "City": City, "Amenity": Amenity, "Place": Place,
-                   "Review": Review}
-        return classes
-
-    def attributes(self):
-        """Returns valid attributes"""
-        attributes = {"BaseModel": {"id": str,
-                                    "created_at": datetime.datetime,
-                                    "updated_at": datetime.datetime},
-                      "User": {"email": str, "password": str,
-                               "first_name": str, "last_name": str},
-                      "State": {"name": str},
-                      "City": {"state_id": str, "name": str},
-                      "Amenity": {"name": str},
-                      "Place": {"city_id": str, "user_id": str, "name": str,
-                                "description": str, "number_rooms": int,
-                                "number_bathrooms": int, "max_guest": int,
-                                "price_by_night": int, "latitude": float,
-                                "longitude": float, "amenity_ids": list},
-                      "Review": {"place_id": str, "user_id": str, "text": str}
-                      }
-        return attributes
+    def delete(self, obj=None):
+        """
+            delete obj from __objects if it’s inside - if obj is None,
+            the method should not do anything
+        """
+        if (obj):
+            self.__objects.pop("{}.{}".format(type(obj).__name__, obj.id))
